@@ -39,6 +39,20 @@ const initialTeamMembers = [
   { UserID: 'u_001', Name: 'Airada S.', Email: 'airada.s@owndays.com', Role: 'SuperAdmin', CountryAccess: 'ALL', LINE_ID: 'airada_admin', Status: 'Active' },
 ];
 
+const initialMockTasks = [
+  { id: 'T-2026-001', title: 'Hello Kitty Exclusive Launch', project: 'Hello Kitty', topic: 'Official Launch', country: 'TH', date: '2026-07-10', pillar: 'Product', assetType: 'Statics', placement: 'Facebook, Instagram', size: 'FB Single (1080x1080), IG Story (1080x1920)', headline: 'Hello Kitty Exclusive', subtext: 'Get special gift box set', condition: 'T&C Apply', caption: 'Preorder now!', designer: 'Unassigned', status: 'Incoming Requests', urgency: 'Urgent', quality: 98 },
+  { id: 'T-2026-002', title: 'Star Wars Prelaunch KV', project: 'Star Wars', topic: 'Final call', country: 'TH', date: '2026-07-15', pillar: 'Product', assetType: 'Statics', placement: 'Facebook', size: 'FB Single (1080x1080)', headline: 'MAY THE FORCE BE WITH YOUR EYES', subtext: 'Final day', condition: 'Limited stock.', caption: 'May the force be with you!', designer: 'Unassigned', status: 'Open Pool', urgency: 'Normal', quality: 95 },
+  { id: 'T-2026-003', title: 'Siam Square One Closure', project: 'Siam Square One', topic: 'Permanently Closed', country: 'TH', date: '2026-07-20', pillar: 'Store Related', assetType: 'Statics', placement: 'Facebook, Instagram', size: 'FB Single (1080x1080)', headline: 'Permanently Closed', subtext: 'Branch will close.', condition: 'Visit Siam Center.', caption: 'Closed notice.', designer: 'Unassigned', status: 'In Progress', urgency: 'Normal', quality: 90 },
+];
+
+// Helper ปลอดภัยป้องกันหน้าจอขาวจากการจัดรูปแบบเวลา
+const safeFormatDate = (dateString, options = { day: '2-digit', month: 'short', year: 'numeric' }) => {
+  if (!dateString) return '-';
+  const d = new Date(dateString);
+  if (isNaN(d.getTime())) return '-';
+  return d.toLocaleDateString('en-GB', options);
+};
+
 function SidebarItem({ icon: Icon, label, active, onClick, badge, visible = true, theme }) {
   if (!visible) return null;
   return (
@@ -60,7 +74,7 @@ export default function App() {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const [activeView, setActiveView] = useState('board'); 
-  const [tasks, setTasks] = useState([]);
+  const [tasks, setTasks] = useState(initialMockTasks);
   const [teamMembers, setTeamMembers] = useState(initialTeamMembers);
   const [selectedCountry, setSelectedCountry] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -309,7 +323,7 @@ export default function App() {
 }
 
 // ============================================================================
-// 1. BRIEF VIEWER MODAL (Graphic & Video Viewer)
+// 1. BRIEF VIEWER MODAL (Graphic & Video Viewer & Submit Work)
 // ============================================================================
 function BriefViewerModal({ task, onClose, activeUser, setTasks, apiUrl, theme }) {
   const [driveLink, setDriveLink] = useState(task.assetUrl || '');
@@ -413,7 +427,7 @@ function BriefViewerModal({ task, onClose, activeUser, setTasks, apiUrl, theme }
             <div className="mt-auto space-y-6 pt-6 border-t border-slate-800">
               <div>
                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Target Date</p>
-                <p className="text-2xl font-black text-rose-400">{new Date(task.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+                <p className="text-2xl font-black text-rose-400">{safeFormatDate(task.date)}</p>
               </div>
               <div className="mb-4">
                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Assignee</p>
@@ -440,7 +454,7 @@ function BriefViewerModal({ task, onClose, activeUser, setTasks, apiUrl, theme }
                   </div>
                   <div className="border-t border-slate-200 pt-4 flex justify-between text-xs text-slate-400 font-bold">
                     <span>Project: {task.project}</span>
-                    <span>Date: {task.date ? new Date(task.date).toLocaleDateString('en-GB') : '-'}</span>
+                    <span>Date: {safeFormatDate(task.date)}</span>
                   </div>
                 </div>
               </div>
@@ -448,18 +462,21 @@ function BriefViewerModal({ task, onClose, activeUser, setTasks, apiUrl, theme }
               <div className="flex-1 overflow-auto p-4 flex items-center justify-center">
                 <div className="relative bg-white shadow-lg overflow-hidden border border-slate-300" style={{ width: '800px', height: '450px', transformOrigin: 'center' }}>
                   {canvasElements.map(el => {
-                    const style = { position: 'absolute', left: el.x, top: el.y, zIndex: el.zIndex || 1, pointerEvents: 'none' };
+                    if (!el) return null;
+                    const x = typeof el.x === 'number' && !isNaN(el.x) ? el.x : 50;
+                    const y = typeof el.y === 'number' && !isNaN(el.y) ? el.y : 50;
+                    const style = { position: 'absolute', left: `${x}px`, top: `${y}px`, zIndex: el.zIndex || 1, pointerEvents: 'none' };
                     if (el.type === 'text') {
-                      return <div key={el.id} style={{...style, color: el.color, fontSize: el.fontSize, fontWeight: el.fontWeight || 'normal', whiteSpace: 'pre-wrap'}}>{el.text}</div>;
+                      return <div key={el.id} style={{...style, color: el.color || '#000000', fontSize: el.fontSize || 16, fontWeight: el.fontWeight || 'normal', whiteSpace: 'pre-wrap'}}>{el.text}</div>;
                     }
                     if (el.type === 'rect') {
-                      return <div key={el.id} style={{...style, width: el.width, height: el.height, backgroundColor: el.fill}}></div>;
+                      return <div key={el.id} style={{...style, width: el.width || 100, height: el.height || 100, backgroundColor: el.fill || '#cccccc'}}></div>;
                     }
                     if (el.type === 'circle') {
-                      return <div key={el.id} style={{...style, width: el.width, height: el.height, backgroundColor: el.fill, borderRadius: '50%'}}></div>;
+                      return <div key={el.id} style={{...style, width: el.width || 100, height: el.height || 100, backgroundColor: el.fill || '#cccccc', borderRadius: '50%'}}></div>;
                     }
                     if (el.type === 'image') {
-                      return <img key={el.id} src={el.url} style={{...style, width: el.width, height: el.height, objectFit: 'contain'}} alt=""/>;
+                      return <img key={el.id} src={el.url || ''} style={{...style, width: el.width || 100, height: el.height || 100, objectFit: 'contain'}} alt=""/>;
                     }
                     return null;
                   })}
@@ -772,7 +789,7 @@ function BriefSlideGenerator({ setTasks, editData, setEditData, activeUser, setA
               <div className="grid grid-cols-2 gap-6 mt-6 text-sm text-slate-600">
                 <div>
                   <p className="text-[10px] uppercase font-bold text-slate-400 mb-1">Target Date</p>
-                  <p className="font-black text-slate-800">{formData.date ? new Date(formData.date).toLocaleDateString('en-GB') : '-'}</p>
+                  <p className="font-black text-slate-800">{safeFormatDate(formData.date)}</p>
                 </div>
                 <div>
                   <p className="text-[10px] uppercase font-bold text-slate-400 mb-1">Platforms</p>
@@ -872,7 +889,7 @@ function BriefSlideGenerator({ setTasks, editData, setEditData, activeUser, setA
                 const y = typeof el.y === 'number' && !isNaN(el.y) ? el.y : 50;
                 const style = {
                   position: 'absolute', left: `${x}px`, top: `${y}px`, zIndex: el.zIndex || 1,
-                  cursor: 'grab', userSelect: 'none', border: selectedId === el.id ? `2px solid ${THEMES[themeColor].bg.split('-')[1]}` : '2px solid transparent'
+                  cursor: 'grab', userSelect: 'none', border: selectedId === el.id ? `2px solid ${THEMES[themeColor]?.bg?.split('-')[1] || 'blue'}` : '2px solid transparent'
                 };
                 if(isDragging && selectedId === el.id) style.cursor = 'grabbing';
 
@@ -1048,7 +1065,7 @@ function BoardView({ tasks, setTasks, activeUser, apiUrl, onViewBrief, onEditBri
                 </div>
                 <div className="text-right shrink-0 ml-4">
                   <span className="text-[10px] uppercase font-bold text-slate-500 block">Due</span>
-                  <span className="text-xl font-black text-rose-400">{t.date ? new Date(t.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '-'}</span>
+                  <span className="text-xl font-black text-rose-400">{safeFormatDate(t.date, { day: 'numeric', month: 'short' })}</span>
                 </div>
               </div>
             ))}
@@ -1115,7 +1132,7 @@ function BoardView({ tasks, setTasks, activeUser, apiUrl, onViewBrief, onEditBri
                     
                     <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 my-3 text-center">
                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">Target Date</p>
-                       <p className="text-2xl font-black text-rose-400">{task.date ? new Date(task.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '-'}</p>
+                       <p className="text-2xl font-black text-rose-400">{safeFormatDate(task.date, { day: '2-digit', month: 'short' })}</p>
                     </div>
 
                     <div className="text-[10px] text-slate-400 mb-3 flex items-center justify-between">
@@ -1294,7 +1311,7 @@ function TableView({ tasks, onEditTask, theme }) {
                 return (
                   <tr key={t.id} className="hover:bg-slate-900/50">
                     <td className="p-4"><button onClick={() => onEditTask(t)} className={`text-slate-500 ${theme.hover.replace('bg','text')} p-1 bg-slate-900 rounded border border-slate-800`}><Edit2 className="w-3.5 h-3.5"/></button></td>
-                    <td className={`p-4 font-bold ${theme.text}`}>{t.date ? new Date(t.date).toLocaleDateString('en-GB') : '-'}</td>
+                    <td className={`p-4 font-bold ${theme.text}`}>{safeFormatDate(t.date)}</td>
                     <td className={`p-4 ${countdown.color}`}>{countdown.text}</td>
                     <td className="p-4 font-bold text-white">{t.project}</td>
                     <td className="p-4 text-slate-300">{t.topic}</td>
@@ -1539,8 +1556,9 @@ function CalendarPlanView({ tasks, setTasks, apiUrl, theme }) {
   const blanks = Array.from({ length: firstDayOfMonth }, (_, i) => i);
 
   const tasksInMonth = useMemo(() => {
+    if (!Array.isArray(tasks)) return [];
     return tasks.filter(task => {
-      if (!task.date) return false;
+      if (!task || !task.date) return false;
       const taskDate = new Date(task.date);
       return !isNaN(taskDate.getTime()) && taskDate.getMonth() === currentMonth.getMonth() && taskDate.getFullYear() === currentMonth.getFullYear();
     });
@@ -1607,8 +1625,9 @@ function CalendarPlanView({ tasks, setTasks, apiUrl, theme }) {
           
           {days.map(day => {
             const dayTasks = tasksInMonth.filter(task => {
-              if(!task.date) return false;
-              return new Date(task.date).getDate() === day;
+              if(!task || !task.date) return false;
+              const d = new Date(task.date);
+              return !isNaN(d.getTime()) && d.getDate() === day;
             });
             const isToday = new Date().getDate() === day && new Date().getMonth() === currentMonth.getMonth() && new Date().getFullYear() === currentMonth.getFullYear();
 
@@ -1727,7 +1746,7 @@ function MediaLibraryView({ tasks, theme }) {
                     </div>
                     <span>{task.designer || 'Unassigned'}</span>
                   </div>
-                  <span>{task.date ? new Date(task.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '-'}</span>
+                  <span>{safeFormatDate(task.date, { day: 'numeric', month: 'short' })}</span>
                 </div>
               </div>
             </div>
