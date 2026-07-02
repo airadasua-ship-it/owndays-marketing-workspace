@@ -183,11 +183,6 @@ export default function App() {
                 {isLoggingIn ? <Loader2 className="w-5 h-5 animate-spin"/> : <><CheckCircle2 className="w-4 h-4"/> เข้าสู่ระบบ</>}
               </button>
             </form>
-
-            <div className="mt-8 pt-6 border-t border-slate-800 text-center">
-               <p className="text-[10px] text-slate-500 mb-3 font-medium">หากเป็นแอดมินหรือผู้ใช้งานครั้งแรก กรุณาเข้าสู่ระบบด้วย:</p>
-               <button onClick={() => setLoginEmail('airada.s@owndays.com')} className="text-xs text-blue-400 hover:text-white underline font-bold transition-colors">airada.s@owndays.com</button>
-            </div>
           </div>
         </div>
       </div>
@@ -378,8 +373,8 @@ function BriefViewerModal({ task, onClose, activeUser, setTasks, apiUrl }) {
               <div>
                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Assignee</p>
                 <p className="text-base font-bold text-white flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-xs border border-slate-700">{task.designer?.charAt(0)}</span>
-                  {task.designer}
+                  <span className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-xs border border-slate-700">{task.designer?.charAt(0) || '?'}</span>
+                  {task.designer || 'Unassigned'}
                 </p>
               </div>
             </div>
@@ -666,7 +661,7 @@ function TeamAdminView({ teamMembers, setTeamMembers, activeUser, permissions, s
         {teamMembers.map(member => (
           <div key={member.UserID} className="bg-slate-950 p-6 rounded-2xl border border-slate-800 flex items-center justify-between group">
              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full border border-slate-700 bg-slate-800 flex items-center justify-center font-black text-slate-400">{member.Name.charAt(0)}</div>
+                <div className="w-12 h-12 rounded-full border border-slate-700 bg-slate-800 flex items-center justify-center font-black text-slate-400">{member.Name?.charAt(0) || '?'}</div>
                 <div>
                   <h3 className="font-bold text-white text-sm flex items-center gap-1">
                     {member.Name} 
