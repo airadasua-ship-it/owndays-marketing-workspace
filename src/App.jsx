@@ -10,14 +10,11 @@ import {
   Inbox, CheckSquare, Settings, LogOut, Check, GripVertical, AlertTriangle, Link as LinkIcon,
   Palette, Plus, Type, Square, Circle, BringToFront, SendToBack, MousePointer2, Smartphone, Ruler
 } from 'lucide-react';
-
 const API_URL = 'https://script.google.com/macros/s/AKfycby6j9tUrUE948IhRFbYBcGyJT2h7AzOPp9ZjyfQdKxK1Fw0ypoNH0jBUAx4b42D4luR/exec';
-
 const STAGES = ['Incoming Requests', 'Open Pool', 'In Progress', 'Reviewing', 'Published'];
 const COUNTRIES = ['ALL', 'TH', 'MY', 'KH', 'ADS'];
 const STANDARD_SIZES = ['FB Single (1080x1080)', 'FB Album (1080x1350)', 'IG Story (1080x1920)', 'Reels / TikTok (1080x1920)', 'Ads (1200x628)'];
 const STANDARD_PLATFORMS = ['Facebook', 'Instagram', 'TikTok', 'LINE', 'Ads', 'Website'];
-
 const THEMES = {
   blue: { bg: 'bg-blue-600', hover: 'hover:bg-blue-500', text: 'text-blue-500', border: 'border-blue-500', outline: 'focus:border-blue-500', lightBg: 'bg-blue-600/20' },
   rose: { bg: 'bg-rose-600', hover: 'hover:bg-rose-500', text: 'text-rose-500', border: 'border-rose-500', outline: 'focus:border-rose-500', lightBg: 'bg-rose-600/20' },
@@ -25,7 +22,6 @@ const THEMES = {
   amber: { bg: 'bg-amber-600', hover: 'hover:bg-amber-500', text: 'text-amber-500', border: 'border-amber-500', outline: 'focus:border-amber-500', lightBg: 'bg-amber-600/20' },
   purple: { bg: 'bg-purple-600', hover: 'hover:bg-purple-500', text: 'text-purple-500', border: 'border-purple-500', outline: 'focus:border-purple-500', lightBg: 'bg-purple-600/20' }
 };
-
 const defaultPermissions = {
   SuperAdmin: ['dashboard', 'library', 'calendar', 'brief', 'board', 'video-timeline', 'table', 'team'],
   Manager: ['dashboard', 'library', 'calendar', 'brief', 'board', 'video-timeline', 'table', 'team'],
@@ -34,17 +30,14 @@ const defaultPermissions = {
   Editor: ['library', 'board', 'video-timeline'],
   Requester: ['brief']
 };
-
 const initialTeamMembers = [
   { UserID: 'u_001', Name: 'Airada S.', Email: 'airada.s@owndays.com', Role: 'SuperAdmin', CountryAccess: 'ALL', LINE_ID: 'airada_admin', Status: 'Active' },
 ];
-
 const initialMockTasks = [
   { id: 'T-2026-001', title: 'Hello Kitty Exclusive Launch', project: 'Hello Kitty', topic: 'Official Launch', country: 'TH', date: '2026-07-10', pillar: 'Product', assetType: 'Statics', placement: 'Facebook, Instagram', size: 'FB Single (1080x1080), IG Story (1080x1920)', headline: 'Hello Kitty Exclusive', subtext: 'Get special gift box set', condition: 'T&C Apply', caption: 'Preorder now!', designer: 'Unassigned', status: 'Incoming Requests', urgency: 'Urgent', quality: 98 },
   { id: 'T-2026-002', title: 'Star Wars Prelaunch KV', project: 'Star Wars', topic: 'Final call', country: 'TH', date: '2026-07-15', pillar: 'Product', assetType: 'Statics', placement: 'Facebook', size: 'FB Single (1080x1080)', headline: 'MAY THE FORCE BE WITH YOUR EYES', subtext: 'Final day', condition: 'Limited stock.', caption: 'May the force be with you!', designer: 'Unassigned', status: 'Open Pool', urgency: 'Normal', quality: 95 },
   { id: 'T-2026-003', title: 'Siam Square One Closure', project: 'Siam Square One', topic: 'Permanently Closed', country: 'TH', date: '2026-07-20', pillar: 'Store Related', assetType: 'Statics', placement: 'Facebook, Instagram', size: 'FB Single (1080x1080)', headline: 'Permanently Closed', subtext: 'Branch will close.', condition: 'Visit Siam Center.', caption: 'Closed notice.', designer: 'Unassigned', status: 'In Progress', urgency: 'Normal', quality: 90 },
 ];
-
 // Helper ปลอดภัยป้องกันหน้าจอขาวจากการจัดรูปแบบเวลา
 const safeFormatDate = (dateString, options = { day: '2-digit', month: 'short', year: 'numeric' }) => {
   if (!dateString) return '-';
@@ -52,7 +45,25 @@ const safeFormatDate = (dateString, options = { day: '2-digit', month: 'short', 
   if (isNaN(d.getTime())) return '-';
   return d.toLocaleDateString('en-GB', options);
 };
-
+// ✅ FIX #3: getProjectColor was missing entirely, causing a ReferenceError
+// (and a white screen) as soon as CalendarPlanView tried to render any task.
+const PROJECT_COLORS = [
+  'bg-blue-600/80 border-blue-500 text-white',
+  'bg-rose-600/80 border-rose-500 text-white',
+  'bg-emerald-600/80 border-emerald-500 text-white',
+  'bg-amber-600/80 border-amber-500 text-white',
+  'bg-purple-600/80 border-purple-500 text-white',
+  'bg-cyan-600/80 border-cyan-500 text-white',
+  'bg-pink-600/80 border-pink-500 text-white',
+];
+const getProjectColor = (projectName) => {
+  if (!projectName) return PROJECT_COLORS[0];
+  let hash = 0;
+  for (let i = 0; i < projectName.length; i++) {
+    hash = projectName.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return PROJECT_COLORS[Math.abs(hash) % PROJECT_COLORS.length];
+};
 function SidebarItem({ icon: Icon, label, active, onClick, badge, visible = true, theme }) {
   if (!visible) return null;
   return (
@@ -62,7 +73,6 @@ function SidebarItem({ icon: Icon, label, active, onClick, badge, visible = true
     </button>
   );
 }
-
 export default function App() {
   const [activeUser, setActiveUser] = useState(null); 
   const [permissions, setPermissions] = useState(defaultPermissions);
@@ -72,7 +82,6 @@ export default function App() {
   const [loginEmail, setLoginEmail] = useState('');
   const [loginError, setLoginError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-
   const [activeView, setActiveView] = useState('board'); 
   const [tasks, setTasks] = useState(initialMockTasks);
   const [teamMembers, setTeamMembers] = useState(initialTeamMembers);
@@ -82,7 +91,6 @@ export default function App() {
   const [editTaskData, setEditTaskData] = useState(null); 
   const [viewingTask, setViewingTask] = useState(null);
   const [isLoadingData, setIsLoadingData] = useState(false);
-
   const fetchAllData = async () => {
     setIsLoadingData(true);
     try {
@@ -95,7 +103,6 @@ export default function App() {
         }));
         setTasks(validated);
       }
-
       const userRes = await fetch(`${API_URL}?action=getUsers`);
       const userJson = await userRes.json();
       if (userJson.success && userJson.data.length > 0) {
@@ -109,18 +116,15 @@ export default function App() {
       setIsLoadingData(false);
     }
   };
-
   useEffect(() => {
     fetchAllData();
     const savedTheme = localStorage.getItem('owndays_theme');
     if(savedTheme && THEMES[savedTheme]) setThemeColor(savedTheme);
   }, []);
-
   const changeTheme = (color) => {
     setThemeColor(color);
     localStorage.setItem('owndays_theme', color);
   };
-
   const filteredTasks = useMemo(() => {
     return tasks.filter(t => {
       const matchCountry = selectedCountry === 'ALL' || t.country === selectedCountry;
@@ -130,13 +134,11 @@ export default function App() {
       return matchCountry && matchSearch;
     });
   }, [tasks, selectedCountry, searchQuery]);
-
   const hasAccess = (viewName) => {
     if (!activeUser) return false;
     if (activeUser.Role === 'SuperAdmin') return true; 
     return permissions[activeUser.Role]?.includes(viewName);
   };
-
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoginError('');
@@ -160,14 +162,12 @@ export default function App() {
       setIsLoggingIn(false);
     }, 800);
   };
-
   if (!activeUser) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4">
         <div className="bg-slate-900 border border-slate-800 p-8 rounded-2xl w-full max-w-md shadow-2xl relative overflow-hidden">
           <div className="absolute -top-20 -right-20 w-40 h-40 bg-blue-600/10 rounded-full blur-3xl"></div>
           <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-blue-600/10 rounded-full blur-3xl"></div>
-
           <div className="relative z-10">
             <div className={`w-16 h-16 ${theme.bg} rounded-xl flex items-center justify-center font-black text-white text-3xl mx-auto mb-6 shadow-lg shadow-blue-500/20`}>O</div>
             <h2 className="text-2xl font-black text-white text-center mb-2">OWNDAYS Marketing Hub</h2>
@@ -191,7 +191,6 @@ export default function App() {
                   required
                 />
               </div>
-
               <button
                 type="submit"
                 disabled={isLoggingIn}
@@ -205,7 +204,6 @@ export default function App() {
       </div>
     );
   }
-
   return (
     <div className="flex h-screen bg-slate-900 text-slate-100 font-sans overflow-hidden">
       
@@ -214,7 +212,6 @@ export default function App() {
           <div className={`w-8 h-8 ${theme.bg} rounded flex items-center justify-center font-bold text-white mr-3 shadow-lg`}>O</div>
           <div><h1 className="font-bold text-white text-sm tracking-wide">OWNDAYS</h1><p className="text-[10px] uppercase tracking-wider text-slate-400">Marketing Hub</p></div>
         </div>
-
         <div className="p-4 flex-1 overflow-y-auto scrollbar-thin">
           {(hasAccess('dashboard') || hasAccess('library') || hasAccess('calendar')) && (
             <>
@@ -226,7 +223,6 @@ export default function App() {
               </nav>
             </>
           )}
-
           <p className="text-[10px] font-black text-slate-600 uppercase tracking-wider mb-3 px-2">Workspace</p>
           <nav className="space-y-1 mb-8">
             <SidebarItem icon={FileEdit} label={activeUser.Role === 'Requester' ? "Submit Request" : "Brief Generator"} theme={theme} active={activeView === 'brief'} onClick={() => { setEditTaskData(null); setActiveView('brief'); }} visible={hasAccess('brief')} />
@@ -234,7 +230,6 @@ export default function App() {
             <SidebarItem icon={Film} label="Video Pipeline" theme={theme} active={activeView === 'video-timeline'} onClick={() => setActiveView('video-timeline')} visible={hasAccess('video-timeline')} />
             <SidebarItem icon={ListTodo} label="Master Data List" theme={theme} active={activeView === 'table'} onClick={() => setActiveView('table')} visible={hasAccess('table')} />
           </nav>
-
           {hasAccess('team') && (
             <>
               <p className="text-[10px] font-black text-slate-600 uppercase tracking-wider mb-3 px-2 mt-4">Management</p>
@@ -244,7 +239,6 @@ export default function App() {
             </>
           )}
         </div>
-
         <div className="p-4 border-t border-slate-800 bg-slate-950/50">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -258,7 +252,6 @@ export default function App() {
           </div>
         </div>
       </aside>
-
       <main className="flex-1 flex flex-col h-screen overflow-hidden relative bg-slate-900">
         <header className="h-16 bg-slate-950 border-b border-slate-800 flex items-center justify-between px-6 lg:px-8 z-10 shrink-0 shadow-md">
           <div className="flex items-center gap-6">
@@ -272,7 +265,6 @@ export default function App() {
               ))}
             </div>
           </div>
-
           <div className="flex items-center gap-4">
             <div className="relative group">
               <button className="p-2 text-slate-400 hover:text-white bg-slate-900 border border-slate-800 rounded-full transition-colors">
@@ -286,14 +278,12 @@ export default function App() {
                 ))}
               </div>
             </div>
-
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500" />
               <input type="text" placeholder="Search Topic, Project..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className={`pl-9 pr-4 py-1.5 bg-slate-900 border border-slate-800 rounded-full text-xs text-white placeholder:text-slate-500 outline-none ${theme.outline} w-48 lg:w-64`}/>
             </div>
           </div>
         </header>
-
         <div className="flex-1 overflow-hidden relative">
             {isLoadingData ? (
               <div className="w-full h-full flex flex-col items-center justify-center text-slate-500">
@@ -313,7 +303,6 @@ export default function App() {
               </div>
             )}
         </div>
-
         {viewingTask && (
           <BriefViewerModal task={viewingTask} onClose={() => setViewingTask(null)} activeUser={activeUser} setTasks={setTasks} apiUrl={API_URL} theme={theme} />
         )}
@@ -321,18 +310,15 @@ export default function App() {
     </div>
   );
 }
-
 // ============================================================================
 // 1. BRIEF VIEWER MODAL (Graphic & Video Viewer & Submit Work)
 // ============================================================================
 function BriefViewerModal({ task, onClose, activeUser, setTasks, apiUrl, theme }) {
   const [driveLink, setDriveLink] = useState(task.assetUrl || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   let parsedCaption = task.caption || '';
   let canvasElements = [];
   const isVideo = task.isVideoProduction || task.assetType === 'Video';
-
   try {
     const data = JSON.parse(task.caption);
     if (data.elements) {
@@ -347,10 +333,8 @@ function BriefViewerModal({ task, onClose, activeUser, setTasks, apiUrl, theme }
       canvasElements.push({ id: 'legacy-2', type: 'text', text: task.subtext, x: 40, y: 120, fontSize: 24, color: '#475569', fontWeight: 'normal' });
     }
   }
-
   // ปลดล็อกให้ทุกตำแหน่งที่ทำงานออกแบบสามารถเข้าถึงช่องส่งงาน และมองเห็นลิงก์ที่เคยส่งไปแล้วได้ทันที
   const canSubmitWork = ['Graphic', 'Editor', 'SuperAdmin', 'Manager', 'Creative'].includes(activeUser.Role) && task.status !== 'Published';
-
   const handleSubmitWork = async () => {
     if(!driveLink.trim()) return alert("Please provide a Google Drive or asset link to submit.");
     setIsSubmitting(true);
@@ -371,7 +355,6 @@ function BriefViewerModal({ task, onClose, activeUser, setTasks, apiUrl, theme }
       setIsSubmitting(false);
     }
   };
-
   return (
     <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 lg:p-8 animate-in fade-in zoom-in-95">
       <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-6xl h-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden relative">
@@ -384,7 +367,6 @@ function BriefViewerModal({ task, onClose, activeUser, setTasks, apiUrl, theme }
           </div>
           <button onClick={onClose} className="p-2 bg-slate-800 hover:bg-rose-500 hover:text-white text-slate-400 rounded-xl transition-all shadow-sm"><XCircle className="w-5 h-5"/></button>
         </div>
-
         <div className="flex flex-col lg:flex-row flex-1 overflow-hidden bg-slate-900">
           
           <div className="lg:w-[35%] bg-slate-950/50 border-r border-slate-800 p-8 overflow-y-auto scrollbar-thin flex flex-col gap-8">
@@ -398,21 +380,18 @@ function BriefViewerModal({ task, onClose, activeUser, setTasks, apiUrl, theme }
                     {task.placement ? task.placement.split(',').map(p => <span key={p} className="bg-slate-900 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg text-xs font-bold">{p.trim()}</span>) : '-'}
                   </div>
                 </div>
-
                 <div>
                   <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5"><Ruler className="w-3 h-3"/> Required Sizes</p>
                   <div className="flex flex-col gap-2">
                     {task.size ? task.size.split(',').map(s => <span key={s} className="bg-slate-900 text-slate-300 border border-slate-700 px-4 py-2.5 rounded-xl text-sm font-black shadow-sm">{s.trim()}</span>) : '-'}
                   </div>
                 </div>
-
                 {task.refLink && (
                   <div>
                     <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5"><LinkIcon className="w-3 h-3"/> Reference Link</p>
                     <a href={task.refLink} target="_blank" rel="noreferrer" className={`text-sm font-bold ${theme.text} hover:underline break-all`}>{task.refLink}</a>
                   </div>
                 )}
-
                 {task.assetUrl && (
                   <div className="bg-slate-950/80 border border-slate-800 p-4 rounded-xl mt-4">
                     <p className="text-[10px] text-slate-500 font-black uppercase tracking-wider mb-1">Delivered Asset Link</p>
@@ -423,7 +402,6 @@ function BriefViewerModal({ task, onClose, activeUser, setTasks, apiUrl, theme }
                 )}
               </div>
             </div>
-
             <div className="mt-auto space-y-6 pt-6 border-t border-slate-800">
               <div>
                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Target Date</p>
@@ -438,7 +416,6 @@ function BriefViewerModal({ task, onClose, activeUser, setTasks, apiUrl, theme }
               </div>
             </div>
           </div>
-
           <div className="lg:w-[65%] flex flex-col relative overflow-hidden bg-slate-100">
             {/* Conditional Render: If Video, show clean structured slide. If Graphic, show Canvas rendering */}
             {isVideo ? (
@@ -486,7 +463,6 @@ function BriefViewerModal({ task, onClose, activeUser, setTasks, apiUrl, theme }
                 </div>
               </div>
             )}
-
             {/* Social Caption & Submit Area */}
             <div className="bg-slate-900 border-t border-slate-800 p-6 flex flex-col shrink-0 max-h-72 overflow-y-auto">
               <div className="mb-4">
@@ -495,7 +471,6 @@ function BriefViewerModal({ task, onClose, activeUser, setTasks, apiUrl, theme }
                   {parsedCaption || '-'}
                 </div>
               </div>
-
               {canSubmitWork && (
                 <div className={`mt-2 ${theme.lightBg} border ${theme.border} rounded-2xl p-4 shadow-xl shrink-0 backdrop-blur`}>
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-3">
@@ -527,25 +502,20 @@ function BriefViewerModal({ task, onClose, activeUser, setTasks, apiUrl, theme }
                 </div>
               )}
             </div>
-
           </div>
-
         </div>
       </div>
     </div>
   );
 }
-
 // ============================================================================
 // 4. FREE-FORM CANVAS BRIEF GENERATOR (ลากไฟล์รูปภาพมาวาง และดับเบิ้ลคลิกแก้ไขข้อความได้ทันที)
 // ============================================================================
 function BriefSlideGenerator({ setTasks, editData, setEditData, activeUser, setActiveView, apiUrl, theme, themeColor }) {
   const [briefType, setBriefType] = useState(editData?.isVideoProduction ? 'video' : 'graphic');
-
   const initSizes = editData ? (editData.size || '').split(',').map(s=>s.trim()).filter(s => STANDARD_SIZES.includes(s)) : [];
   const initPlatforms = editData ? (editData.placement || '').split(',').map(p=>p.trim()).filter(p => STANDARD_PLATFORMS.includes(p)) : [];
   const initCustomSizes = editData ? (editData.size || '').split(',').map(s=>s.trim()).filter(s => !STANDARD_SIZES.includes(s) && s !== '') : [];
-
   let initialCaption = editData?.caption || '';
   let initialElements = [];
   try {
@@ -558,9 +528,7 @@ function BriefSlideGenerator({ setTasks, editData, setEditData, activeUser, setA
     if(editData?.headline) initialElements.push({ id: 'e1', type: 'text', text: editData.headline, x: 40, y: 40, fontSize: 48, color: '#0f172a', fontWeight: 'bold' });
     if(editData?.subtext) initialElements.push({ id: 'e2', type: 'text', text: editData.subtext, x: 40, y: 120, fontSize: 24, color: '#475569', fontWeight: 'normal' });
   }
-
   const isRequester = activeUser.Role === 'Requester';
-
   const [formData, setFormData] = useState({
     id: editData?.id || null, project: editData?.project || '', topic: editData?.topic || '',
     selectedPlatforms: initPlatforms, selectedSizes: initSizes, customSizes: initCustomSizes,
@@ -568,24 +536,24 @@ function BriefSlideGenerator({ setTasks, editData, setEditData, activeUser, setA
     caption: initialCaption, urgency: editData?.urgency || 'Normal',
     refLink: editData?.refLink || '', refImage: editData?.refImage || ''
   });
-
   const [tempCustomSize, setTempCustomSize] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   // --- CANVAS STATE ---
   const [elements, setElements] = useState(initialElements);
   const [selectedId, setSelectedId] = useState(null);
   const canvasRef = useRef(null);
   const dragInfo = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
-
+  // ✅ FIX #1: isFullscreen / setIsFullscreen were used by the "Present Slide"
+  // button but never declared, which threw a ReferenceError and produced a
+  // white screen as soon as this view rendered.
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const handleInputChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   
   const toggleCheckbox = (listName, item) => setFormData(prev => {
     const isSelected = prev[listName].includes(item);
     return { ...prev, [listName]: isSelected ? prev[listName].filter(i => i !== item) : [...prev[listName], item] };
   });
-
   const handleAddCustomSize = (e) => {
     e.preventDefault();
     if(tempCustomSize.trim() !== '') {
@@ -593,11 +561,9 @@ function BriefSlideGenerator({ setTasks, editData, setEditData, activeUser, setA
       setTempCustomSize('');
     }
   };
-
   const removeCustomSize = (size) => {
     setFormData(prev => ({...prev, customSizes: prev.customSizes.filter(s => s !== size)}));
   };
-
   // ✅ ระบบส่งข้อมูลบรีฟแบบ Optimistic UI ช่วยแก้ปัญหากดส่งบรีฟแล้วค้าง
   const handlePublish = async () => {
     if (!formData.project || !formData.topic) return alert("Please fill in Project and Topic.");
@@ -605,23 +571,25 @@ function BriefSlideGenerator({ setTasks, editData, setEditData, activeUser, setA
     
     const finalSizes = [...formData.selectedSizes, ...formData.customSizes].join(', ');
     const finalPlacementString = formData.selectedPlatforms.join(', ');
-
     // ตรวจจับงานวิดีโออัจฉริยะ (Video Auto-Detect)
     const isVideo = briefType === 'video' || 
                     formData.selectedSizes.some(s => s.toLowerCase().includes('reel') || s.toLowerCase().includes('tiktok') || s.toLowerCase().includes('vdo')) ||
                     formData.selectedPlatforms.some(p => p.toLowerCase().includes('tiktok') || p.toLowerCase().includes('reels') || p.toLowerCase().includes('video'));
-
     // Pack canvas elements inside caption field
     const complexData = {
       text: formData.caption,
       elements: elements
     };
-
     const payload = {
       id: formData.id || 'T-2026-' + Math.floor(1000 + Math.random() * 9000),
       title: formData.topic.slice(0, 30), project: formData.project, topic: formData.topic,
       country: formData.country, date: formData.date, assetType: isVideo ? 'Video' : 'Statics',
-      placement: finalPlacementString, size: finalSizeString, 
+      placement: finalPlacementString,
+      // ✅ FIX #2: this referenced `finalSizeString`, a variable that was
+      // never declared (the real variable is `finalSizes`). That
+      // ReferenceError fired the moment "Generate & Add to Pool" was
+      // clicked, causing the white screen.
+      size: finalSizes,
       headline: '', subtext: '', condition: '', 
       caption: JSON.stringify(complexData), 
       designer: editData?.designer || 'Unassigned',
@@ -629,7 +597,6 @@ function BriefSlideGenerator({ setTasks, editData, setEditData, activeUser, setA
       refLink: formData.refLink, refImage: formData.refImage,
       lastUpdated: new Date().toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' })
     };
-
     try {
       if (formData.id) {
         setTasks(prev => prev.map(t => t.id === formData.id ? { ...t, ...payload } : t));
@@ -650,7 +617,6 @@ function BriefSlideGenerator({ setTasks, editData, setEditData, activeUser, setA
       setIsSubmitting(false);
     }
   };
-
   // --- CANVAS LOGIC ---
   const addElement = (type) => {
     const newEl = { id: `el-${Date.now()}`, type, x: 50, y: 50, zIndex: elements.length + 1 };
@@ -665,16 +631,13 @@ function BriefSlideGenerator({ setTasks, editData, setEditData, activeUser, setA
     setElements([...elements, newEl]);
     setSelectedId(newEl.id);
   };
-
   const updateSelectedElement = (updates) => {
     setElements(prev => prev.map(el => el.id === selectedId ? { ...el, ...updates } : el));
   };
-
   const deleteSelectedElement = () => {
     setElements(prev => prev.filter(el => el.id !== selectedId));
     setSelectedId(null);
   };
-
   const handleMouseDown = (e, id) => {
     e.stopPropagation();
     setSelectedId(id);
@@ -686,7 +649,6 @@ function BriefSlideGenerator({ setTasks, editData, setEditData, activeUser, setA
     dragInfo.current = { id, offsetX, offsetY };
     setIsDragging(true);
   };
-
   const handleMouseMove = (e) => {
     if (!isDragging || !dragInfo.current) return;
     const rect = canvasRef.current.getBoundingClientRect();
@@ -694,12 +656,10 @@ function BriefSlideGenerator({ setTasks, editData, setEditData, activeUser, setA
     const newY = (e.clientY - rect.top) - dragInfo.current.offsetY;
     setElements(prev => prev.map(el => el.id === dragInfo.current.id ? { ...el, x: newX, y: newY } : el));
   };
-
   const handleMouseUp = () => {
     setIsDragging(false);
     dragInfo.current = null;
   };
-
   // ✅ ดับเบิ้ลคลิกบนกล่องข้อความเพื่อแก้ไของค์ประกอบ
   const handleDoubleClick = (e, el) => {
     e.stopPropagation();
@@ -715,7 +675,6 @@ function BriefSlideGenerator({ setTasks, editData, setEditData, activeUser, setA
       }
     }
   };
-
   // ✅ ลากไฟล์ภาพจาก Desktop มาปล่อย (Drag & Drop) ลงบน Canvas ได้เลย!
   const handleFileDrop = (e) => {
     e.preventDefault();
@@ -743,16 +702,12 @@ function BriefSlideGenerator({ setTasks, editData, setEditData, activeUser, setA
       }
     }
   };
-
   const handleDragOverFile = (e) => {
     e.preventDefault();
   };
-
   const bringForward = () => updateSelectedElement({ zIndex: (elements.find(e=>e.id===selectedId)?.zIndex || 0) + 1 });
   const sendBackward = () => updateSelectedElement({ zIndex: Math.max(1, (elements.find(e=>e.id===selectedId)?.zIndex || 0) - 1) });
-
   const selectedEl = elements.find(e => e.id === selectedId);
-
   return (
     <div className="flex h-full w-full overflow-hidden bg-slate-900 relative">
       <div className={`h-full overflow-y-auto p-6 flex flex-col items-center bg-slate-900/60 transition-all w-2/3`}>
@@ -766,7 +721,6 @@ function BriefSlideGenerator({ setTasks, editData, setEditData, activeUser, setA
             </div>
           </div>
         )}
-
         {/* Top Control Bar */}
         <div className="w-full max-w-[800px] flex items-center justify-between mb-4 shrink-0">
           <div className="flex items-center bg-slate-950 p-1 rounded-lg border border-slate-800">
@@ -778,7 +732,6 @@ function BriefSlideGenerator({ setTasks, editData, setEditData, activeUser, setA
              {isFullscreen ? 'Exit Presentation' : 'Present Slide'}
           </button>
         </div>
-
         {/* Conditionally Render: Video Specification Sheet vs Graphic Canvas Editor */}
         {briefType === 'video' ? (
           <div className="w-full max-w-[800px] aspect-[16/9] bg-white shadow-2xl border-2 border-slate-400 rounded-2xl overflow-hidden flex flex-col text-slate-900 p-8 justify-between">
@@ -831,7 +784,6 @@ function BriefSlideGenerator({ setTasks, editData, setEditData, activeUser, setA
                 </div>
               )}
             </div>
-
             {/* Settings Panel for Selected Element */}
             {selectedEl && (
               <div className="bg-slate-900 p-3 flex gap-4 items-center border-b border-slate-800">
@@ -864,7 +816,6 @@ function BriefSlideGenerator({ setTasks, editData, setEditData, activeUser, setA
                 )}
               </div>
             )}
-
             {/* Interactive Canvas Area */}
             <div 
               ref={canvasRef}
@@ -892,7 +843,6 @@ function BriefSlideGenerator({ setTasks, editData, setEditData, activeUser, setA
                   cursor: 'grab', userSelect: 'none', border: selectedId === el.id ? `2px solid ${THEMES[themeColor]?.bg?.split('-')[1] || 'blue'}` : '2px solid transparent'
                 };
                 if(isDragging && selectedId === el.id) style.cursor = 'grabbing';
-
                 return (
                   <div key={el.id} style={style} onMouseDown={(e) => handleMouseDown(e, el.id)} onDoubleClick={(e) => handleDoubleClick(e, el)} title={el.type === 'text' || el.type === 'image' ? 'Double click to edit' : ''}>
                     {el.type === 'text' && <div style={{color: el.color, fontSize: el.fontSize, fontWeight: el.fontWeight}} className="whitespace-pre-wrap pointer-events-none">{el.text}</div>}
@@ -905,19 +855,16 @@ function BriefSlideGenerator({ setTasks, editData, setEditData, activeUser, setA
             </div>
           </div>
         )}
-
         {/* Social Caption */}
         <div className="w-full max-w-[800px] mt-6 bg-slate-950 border border-slate-800 rounded-2xl p-6">
             <h4 className="text-xs font-black text-slate-400 mb-2">Social Copy / Caption</h4>
             <textarea name="caption" value={formData.caption} onChange={handleInputChange} rows={3} className={`w-full bg-slate-900 border border-slate-700 p-3 rounded-xl text-xs text-white ${theme.outline} outline-none`} placeholder="Type social media caption or video edit requirements here..."/>
         </div>
       </div>
-
       <div className="w-1/3 h-full bg-slate-950 border-l border-slate-800 overflow-y-auto p-6 scrollbar-thin">
         <h3 className="text-base font-black text-white mb-4 flex items-center gap-2">
           <Settings className={`w-5 h-5 ${theme.text}`}/> {editData ? 'Edit Details' : 'New Brief Settings'}
         </h3>
-
         <div className="bg-amber-500/10 border border-amber-500/50 p-4 rounded-xl mb-6 text-xs text-amber-400 font-medium leading-relaxed">
            <strong className="block text-amber-500 font-black mb-1 flex items-center gap-1.5"><AlertTriangle className="w-3 h-3"/> Artwork Request Policy</strong>
            Please allow 1 week in advance. Urgent requests will be locked and require Manager approval.
@@ -930,7 +877,6 @@ function BriefSlideGenerator({ setTasks, editData, setEditData, activeUser, setA
               <div><label className="text-[10px] font-bold text-slate-400 block mb-1.5 uppercase">Topic</label><input name="topic" value={formData.topic} onChange={handleInputChange} className={`w-full bg-slate-950 border border-slate-700 p-2.5 rounded-xl text-sm text-white ${theme.outline} outline-none`}/></div>
               <div><label className="text-[10px] font-bold text-slate-400 block mb-1.5 uppercase">Target Date</label><input type="date" name="date" value={formData.date} onChange={handleInputChange} className={`w-full bg-slate-950 border border-slate-700 p-2.5 rounded-xl text-sm text-white ${theme.outline} outline-none`}/></div>
            </div>
-
            <div className="space-y-5 bg-slate-900/50 p-5 rounded-2xl border border-slate-800/80">
               <p className="text-[10px] font-black text-rose-400 uppercase tracking-widest border-b border-slate-800 pb-2">2. Platforms & Sizes</p>
               <div>
@@ -941,7 +887,6 @@ function BriefSlideGenerator({ setTasks, editData, setEditData, activeUser, setA
                   ))}
                 </div>
               </div>
-
               <div>
                 <label className="text-xs text-slate-300 font-bold block mb-3">Standard Sizes</label>
                 <div className="flex flex-col gap-3 bg-slate-950 p-4 rounded-xl border border-slate-800">
@@ -953,7 +898,6 @@ function BriefSlideGenerator({ setTasks, editData, setEditData, activeUser, setA
                   ))}
                 </div>
               </div>
-
               <div>
                 <label className="text-xs text-slate-300 font-bold block mb-2">Other Sizes</label>
                 <div className="flex gap-2 mb-2">
@@ -967,7 +911,6 @@ function BriefSlideGenerator({ setTasks, editData, setEditData, activeUser, setA
                 </div>
               </div>
            </div>
-
            {/* Reference Link Input Area (Show only reference link input, hide reference image URL input in video mode) */}
            <div className="space-y-4 bg-slate-900/50 p-5 rounded-2xl border border-slate-800/80">
               <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest border-b border-slate-800 pb-2">3. Reference Links</p>
@@ -994,13 +937,11 @@ function BriefSlideGenerator({ setTasks, editData, setEditData, activeUser, setA
     </div>
   );
 }
-
 // ============================================================================
 // 5. KANBAN BOARD (แยกออกเป็น 2 แท็บเพื่อขยายขนาดการ์ดไม่ให้โดนบีบอัด)
 // ============================================================================
 function BoardView({ tasks, setTasks, activeUser, apiUrl, onViewBrief, onEditBrief, theme, themeColor }) {
   const [activeBoardTab, setActiveBoardTab] = useState('requests'); // 'requests' หรือ 'production'
-
   const upcomingTasks = useMemo(() => {
     return tasks
       .filter(t => t.status !== 'Published')
@@ -1011,7 +952,6 @@ function BoardView({ tasks, setTasks, activeUser, apiUrl, onViewBrief, onEditBri
       })
       .slice(0, 4);
   }, [tasks]);
-
   const moveTask = (taskId, direction) => {
     setTasks(currentTasks => currentTasks.map(t => {
       if (t.id === taskId) {
@@ -1026,16 +966,13 @@ function BoardView({ tasks, setTasks, activeUser, apiUrl, onViewBrief, onEditBri
       return t;
     }));
   };
-
   const claimTask = (taskId) => {
     setTasks(currentTasks => currentTasks.map(t => t.id === taskId ? { ...t, designer: activeUser.Name, status: 'In Progress' } : t));
     fetch(apiUrl, { method: 'POST', body: JSON.stringify({ action: 'claimTask', taskId: taskId, designerId: activeUser.Name }) }).catch(e=>{});
   };
-
   const releaseTask = (taskId) => {
     setTasks(currentTasks => currentTasks.map(t => t.id === taskId ? { ...t, designer: 'Unassigned', status: 'Open Pool' } : t));
   };
-
   const approveToPool = (taskId, urgency) => {
     if ((urgency === 'Urgent' || urgency === 'Emergency') && activeUser.Role === 'Creative' && activeUser.Role !== 'SuperAdmin') {
       return alert('Urgent/Emergency tasks require Manager or SuperAdmin approval.');
@@ -1043,12 +980,10 @@ function BoardView({ tasks, setTasks, activeUser, apiUrl, onViewBrief, onEditBri
     setTasks(currentTasks => currentTasks.map(t => t.id === taskId ? { ...t, status: 'Open Pool' } : t));
     fetch(apiUrl, { method: 'POST', body: JSON.stringify({ action: 'updateStatus', taskId: taskId, newStatus: 'Open Pool', userId: activeUser.Name }) }).catch(e=>{});
   };
-
   // กรอง Stages ที่ต้องการเรนเดอร์ตามแท็บที่เลือก
   const activeStages = activeBoardTab === 'requests' 
     ? ['Incoming Requests', 'Open Pool'] 
     : ['In Progress', 'Reviewing', 'Published'];
-
   return (
     <div className="h-full flex flex-col p-6 lg:p-8 animate-in fade-in duration-200 overflow-y-auto">
       
@@ -1072,7 +1007,6 @@ function BoardView({ tasks, setTasks, activeUser, apiUrl, onViewBrief, onEditBri
           </div>
         </div>
       )}
-
       {/* 🔵 Section: Tabs Controller (Asana & Notion Style) */}
       <div className="flex justify-between items-center mb-6 shrink-0 border-b border-slate-800 pb-4">
         <div className="flex bg-slate-950 p-1.5 rounded-xl border border-slate-800">
@@ -1095,7 +1029,6 @@ function BoardView({ tasks, setTasks, activeUser, apiUrl, onViewBrief, onEditBri
            <span>Actioning as: <strong className="text-emerald-400">{activeUser.Name} ({activeUser.Role})</strong></span>
         </div>
       </div>
-
       {/* Grid Layout (การ์ดจะขยายเต็มหน้าจอ และไม่เบียดซ้อนกัน) */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-start pb-10">
         {activeStages.map((stage, sIdx) => {
@@ -1111,7 +1044,6 @@ function BoardView({ tasks, setTasks, activeUser, apiUrl, onViewBrief, onEditBri
                 </div>
                 <span className="bg-slate-900 border border-slate-800 text-[11px] px-2.5 py-0.5 rounded-full text-slate-400 font-black">{stageTasks.length}</span>
               </div>
-
               <div className="p-4 flex-col space-y-3">
                 {stageTasks.map(task => (
                   <div key={task.id} className={`bg-slate-900 p-5 rounded-2xl border border-slate-800 hover:border-blue-500/50 hover:shadow-lg transition-all group relative cursor-pointer`} onClick={() => onViewBrief(task)}>
@@ -1134,7 +1066,6 @@ function BoardView({ tasks, setTasks, activeUser, apiUrl, onViewBrief, onEditBri
                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">Target Date</p>
                        <p className="text-2xl font-black text-rose-400">{safeFormatDate(task.date, { day: '2-digit', month: 'short' })}</p>
                     </div>
-
                     <div className="text-[10px] text-slate-400 mb-3 flex items-center justify-between">
                       <span className="flex items-center gap-1.5">
                         <div className="w-4 h-4 bg-slate-800 border border-slate-700 rounded-full flex items-center justify-center font-bold text-[8px] text-white">
@@ -1160,7 +1091,6 @@ function BoardView({ tasks, setTasks, activeUser, apiUrl, onViewBrief, onEditBri
                            ) : (<p className="text-center text-[10px] text-slate-500 font-bold mt-2">Waiting for Creative</p>)}
                          </div>
                       )}
-
                       {stage === 'Open Pool' && (
                          <div className="mt-2">
                            {(activeUser.Role === 'Graphic' || activeUser.Role === 'Editor' || activeUser.Role === 'SuperAdmin') && (task.designer === 'Unassigned' || !task.designer) && (
@@ -1170,7 +1100,6 @@ function BoardView({ tasks, setTasks, activeUser, apiUrl, onViewBrief, onEditBri
                            )}
                          </div>
                       )}
-
                       {sIdx >= 0 && activeBoardTab === 'production' && (task.designer === activeUser.Name || activeUser.Role === 'SuperAdmin') && (
                          <div className="flex gap-2 mt-3 pt-3 border-t border-slate-800/50">
                            <button onClick={() => releaseTask(task.id)} className="flex-1 py-1.5 bg-rose-600/10 text-rose-400 text-[10px] font-black rounded-lg border border-rose-900/50 hover:bg-rose-600 hover:text-white transition-colors">Release</button>
@@ -1181,7 +1110,6 @@ function BoardView({ tasks, setTasks, activeUser, apiUrl, onViewBrief, onEditBri
                          </div>
                       )}
                     </div>
-
                   </div>
                 ))}
               </div>
@@ -1192,7 +1120,6 @@ function BoardView({ tasks, setTasks, activeUser, apiUrl, onViewBrief, onEditBri
     </div>
   );
 }
-
 // ----------------------------------------------------------------------
 // DASHBOARD & TIMELINE 
 // ----------------------------------------------------------------------
@@ -1221,7 +1148,6 @@ function YearlyDashboardView({ tasks, theme }) {
     </div>
   );
 }
-
 function VideoTimelineView({ tasks, theme }) {
   const videoTasks = tasks.filter(t => t.isVideoProduction);
   return (
@@ -1238,7 +1164,6 @@ function VideoTimelineView({ tasks, theme }) {
     </div>
   );
 }
-
 // ----------------------------------------------------------------------
 // 7. TABLE VIEW (Master Data Register กับการบอกสถานะและกำหนดเวลาด่วน)
 // ----------------------------------------------------------------------
@@ -1256,9 +1181,7 @@ function TableView({ tasks, onEditTask, theme }) {
     }
     return list.sort((a,b) => new Date(a.date) - new Date(b.date));
   }, [tasks, filterMonth]);
-
   const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
   // คำนวณวันคงเหลือเป้าหมาย (Deadline Countdown) เพื่ออำนวยความสะดวกในการจัดลำดับงาน
   const getDaysLeftText = (targetDateStr) => {
     if (!targetDateStr) return "No Target Date";
@@ -1274,7 +1197,6 @@ function TableView({ tasks, onEditTask, theme }) {
     if (diffDays <= 3) return { text: `${diffDays} days left (Urgent)`, color: 'text-orange-400 font-bold' };
     return { text: `${diffDays} days left`, color: 'text-slate-400' };
   };
-
   return (
     <div className="p-6 lg:p-8 flex flex-col h-full bg-slate-900">
       <div className="flex justify-between items-center mb-6 shrink-0">
@@ -1290,7 +1212,6 @@ function TableView({ tasks, onEditTask, theme }) {
           </select>
         </div>
       </div>
-
       <div className="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden flex-1 flex flex-col">
         <div className="overflow-y-auto scrollbar-thin">
           <table className="w-full text-left whitespace-nowrap">
@@ -1341,7 +1262,6 @@ function TableView({ tasks, onEditTask, theme }) {
     </div>
   );
 }
-
 // ----------------------------------------------------------------------
 // 8. TEAM & ADMIN VIEW
 // ----------------------------------------------------------------------
@@ -1351,19 +1271,15 @@ function TeamAdminView({ teamMembers, setTeamMembers, activeUser, permissions, s
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('Graphic');
   const [isProcessing, setIsProcessing] = useState(false);
-
   // Add Role State
   const [newRoleInput, setNewRoleInput] = useState('');
-
   const isSuperAdmin = activeUser.Role === 'SuperAdmin';
   const isManager = activeUser.Role === 'Manager';
   const canInvite = isSuperAdmin || isManager;
-
   const handleAddMember = async (e) => {
     e.preventDefault();
     if (!canInvite) return;
     setIsProcessing(true);
-
     const newMember = { UserID: 'u_' + Date.now(), Name: name, Email: email, Role: role, CountryAccess: 'TH', LINE_ID: '', Status: 'Active', TasksCompleted: 0 };
     
     try {
@@ -1379,7 +1295,6 @@ function TeamAdminView({ teamMembers, setTeamMembers, activeUser, permissions, s
       setIsProcessing(false);
     }
   };
-
   const handleDeleteMember = async (userId, userEmail) => {
     if(userEmail === 'airada.s@owndays.com') return alert('Cannot remove main SuperAdmin');
     if(!window.confirm(`Delete user ${userEmail}?`)) return;
@@ -1389,7 +1304,6 @@ function TeamAdminView({ teamMembers, setTeamMembers, activeUser, permissions, s
       console.log(err);
     }
   };
-
   const handleAddRole = (e) => {
     e.preventDefault();
     if(!newRoleInput.trim()) return;
@@ -1399,7 +1313,6 @@ function TeamAdminView({ teamMembers, setTeamMembers, activeUser, permissions, s
       setNewRoleInput('');
     }
   };
-
   const handleDeleteRole = (roleToDelete) => {
     if(['SuperAdmin', 'Manager', 'Creative', 'Graphic', 'Editor', 'Requester'].includes(roleToDelete)) {
       return alert("System default roles cannot be deleted.");
@@ -1409,7 +1322,6 @@ function TeamAdminView({ teamMembers, setTeamMembers, activeUser, permissions, s
     delete newPerms[roleToDelete];
     setPermissions(newPerms);
   };
-
   const togglePermission = (roleName, view) => {
     setPermissions(prev => {
       const currentViews = prev[roleName] || [];
@@ -1417,7 +1329,6 @@ function TeamAdminView({ teamMembers, setTeamMembers, activeUser, permissions, s
       return { ...prev, [roleName]: newViews };
     });
   };
-
   const ALL_VIEWS = [
     { id: 'dashboard', name: 'Dashboard' },
     { id: 'library', name: 'Media Library' },
@@ -1426,7 +1337,6 @@ function TeamAdminView({ teamMembers, setTeamMembers, activeUser, permissions, s
     { id: 'board', name: 'Creative Board' },
     { id: 'table', name: 'Master Data List' },
   ];
-
   return (
     <div className="p-6 lg:p-8 space-y-8 relative animate-in fade-in h-full overflow-y-auto bg-slate-900">
       <div className="flex justify-between items-center">
@@ -1440,7 +1350,6 @@ function TeamAdminView({ teamMembers, setTeamMembers, activeUser, permissions, s
           </button>
         )}
       </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {teamMembers.map(member => (
           <div key={member.UserID} className="bg-slate-950 p-6 rounded-2xl border border-slate-800 flex items-center justify-between group">
@@ -1464,7 +1373,6 @@ function TeamAdminView({ teamMembers, setTeamMembers, activeUser, permissions, s
           </div>
         ))}
       </div>
-
       {isSuperAdmin && (
         <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6 mt-8">
           <div className="flex justify-between items-center mb-6">
@@ -1514,7 +1422,6 @@ function TeamAdminView({ teamMembers, setTeamMembers, activeUser, permissions, s
           </div>
         </div>
       )}
-
       {showAddModal && canInvite && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 animate-in fade-in">
           <div className="bg-slate-950 border border-slate-800 rounded-2xl max-w-md w-full p-8 shadow-2xl relative zoom-in-95">
@@ -1542,19 +1449,15 @@ function TeamAdminView({ teamMembers, setTeamMembers, activeUser, permissions, s
     </div>
   );
 }
-
 // ----------------------------------------------------------------------
 // DYNAMIC CALENDAR PLAN VIEW
 // ----------------------------------------------------------------------
 function CalendarPlanView({ tasks, setTasks, apiUrl, theme }) {
   const [currentMonth, setCurrentMonth] = useState(new Date('2026-07-01'));
-
   const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
   const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
-
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
   const blanks = Array.from({ length: firstDayOfMonth }, (_, i) => i);
-
   const tasksInMonth = useMemo(() => {
     if (!Array.isArray(tasks)) return [];
     return tasks.filter(task => {
@@ -1563,26 +1466,20 @@ function CalendarPlanView({ tasks, setTasks, apiUrl, theme }) {
       return !isNaN(taskDate.getTime()) && taskDate.getMonth() === currentMonth.getMonth() && taskDate.getFullYear() === currentMonth.getFullYear();
     });
   }, [tasks, currentMonth]);
-
   const handleDragStart = (e, taskId) => {
     e.dataTransfer.setData('taskId', taskId);
   };
-
   const handleDragOver = (e) => {
     e.preventDefault(); 
   };
-
   const handleDrop = async (e, day) => {
     e.preventDefault();
     const taskId = e.dataTransfer.getData('taskId');
     if (!taskId) return;
-
     // คำนวณวันที่ใหม่แบบเสถียร
     const newDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day, 12, 0, 0); 
     const newDateString = newDate.toISOString().split('T')[0]; 
-
     setTasks(prevTasks => prevTasks.map(t => t.id === taskId ? { ...t, date: newDateString } : t));
-
     try {
       const taskToUpdate = tasks.find(t => t.id === taskId);
       if(taskToUpdate) {
@@ -1595,7 +1492,6 @@ function CalendarPlanView({ tasks, setTasks, apiUrl, theme }) {
       console.log('Calendar Update Background Process Active');
     }
   };
-
   return (
     <div className="max-w-[1200px] mx-auto p-6 lg:p-8 space-y-6 animate-in fade-in duration-200">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
@@ -1612,14 +1508,12 @@ function CalendarPlanView({ tasks, setTasks, apiUrl, theme }) {
           <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))} className="p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"><ChevronRight className="w-5 h-5" /></button>
         </div>
       </div>
-
       <div className="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
         <div className="grid grid-cols-7 border-b border-slate-800 bg-slate-900/50">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
             <div key={day} className="p-3 text-center text-xs font-black text-slate-500 uppercase tracking-wider">{day}</div>
           ))}
         </div>
-
         <div className="grid grid-cols-7 auto-rows-[minmax(130px,auto)] bg-slate-900 gap-px border-b border-slate-800">
           {blanks.map(blank => <div key={`blank-${blank}`} className="bg-slate-950/50 p-2 opacity-50"></div>)}
           
@@ -1630,7 +1524,6 @@ function CalendarPlanView({ tasks, setTasks, apiUrl, theme }) {
               return !isNaN(d.getTime()) && d.getDate() === day;
             });
             const isToday = new Date().getDate() === day && new Date().getMonth() === currentMonth.getMonth() && new Date().getFullYear() === currentMonth.getFullYear();
-
             return (
               <div 
                 key={day} 
@@ -1671,16 +1564,13 @@ function CalendarPlanView({ tasks, setTasks, apiUrl, theme }) {
     </div>
   );
 }
-
 // ----------------------------------------------------------------------
 // MEDIA LIBRARY VIEW
 // ----------------------------------------------------------------------
 function MediaLibraryView({ tasks, theme }) {
   const publishedTasks = tasks.filter(t => t.status === 'Published');
   const [filterType, setFilterType] = useState('ALL');
-
   const displayTasks = publishedTasks.filter(t => filterType === 'ALL' || (t.assetType && t.assetType.includes(filterType)));
-
   return (
     <div className="max-w-[1400px] mx-auto p-6 lg:p-8 space-y-6 animate-in fade-in duration-200 bg-slate-900">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end border-b border-slate-800 pb-6 gap-4">
@@ -1705,7 +1595,6 @@ function MediaLibraryView({ tasks, theme }) {
           ))}
         </div>
       </div>
-
       {displayTasks.length === 0 ? (
         <div className="py-20 flex flex-col items-center justify-center text-slate-500 border border-dashed border-slate-800 rounded-2xl">
           <ImageIcon className="w-12 h-12 mb-4 opacity-50"/>
@@ -1725,14 +1614,12 @@ function MediaLibraryView({ tasks, theme }) {
                     </a>
                   )}
                 </div>
-
                 <div className="absolute top-3 left-3 flex gap-1">
                   <span className="bg-slate-950/80 backdrop-blur text-[9px] font-black text-white px-2 py-1 rounded border border-slate-700/50 uppercase">
                     {task.assetType || 'Statics'}
                   </span>
                 </div>
               </div>
-
               <div className="p-4 flex-1 flex flex-col justify-between">
                 <div>
                   <p className={`text-[10px] font-black ${theme.text} uppercase tracking-widest mb-1`}>{task.project || 'Project'}</p>
